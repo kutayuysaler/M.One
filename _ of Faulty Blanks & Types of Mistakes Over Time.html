@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plotly Visualization</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.3.0/papaparse.min.js"></script>
+</head>
+<body>
+
+<div id="faultyBlanksPlot"></div>
+<div id="mistakesPlot"></div>
+
+<script>
+    // Define lilac color
+    const lilac = '#AFA1E2';
+
+    // Path to the CSV file
+    const csvFilePath = 'path/to/your/ByHour.csv';
+
+    // Function to fetch and parse CSV data
+    Papa.parse(csvFilePath, {
+        download: true,
+        header: true,
+        complete: function(results) {
+            const by_hour_data = results.data;
+
+            // Parse date and numerical columns
+            by_hour_data.forEach(d => {
+                d.Date = new Date(d.Date);
+                d.Nb_blanks_inspected = +d.Nb_blanks_inspected;
+                d.Nb_blanks_rejected = +d.Nb_blanks_rejected;
+                d.Nb_BigShape = +d.Nb_BigShape;
+                d.Nb_Diameter = +d.Nb_Diameter;
+                d.Nb_Shape_int = +d.Nb_Shape_int;
+                d.Nb_Shape_ext = +d.Nb_Shape_ext;
+                d.Nb_Stain = +d.Nb_Stain;
+                d.Nb_Surface_fixed = +d.Nb_Surface_fixed;
+                d.Nb_Surface_adaptive = +d.Nb_Surface_adaptive;
+                d.Nb_Rim_Continuity = +d.Nb_Rim_Continuity;
+                d.Nb_Rim_Surface = +d.Nb_Rim_Surface;
+                d.Nb_Color = +d.Nb_Color;
+                d.Nb_Thick_plus = +d.Nb_Thick_plus;
+                d.Nb_Thick_minus = +d.Nb_Thick_minus;
+            });
+
+            // Calculate the percentage of faulty blanks
+            by_hour_data.forEach(d => {
+                d.Faulty_Blanks_Percentage = (d.Nb_blanks_rejected / d.Nb_blanks_inspected) * 100;
+            });
+
+            // Prepare data for the percentage of faulty blanks plot
+            const faultyBlanksTrace = {
+                x: by_hour_data.map(d => d.Date),
+                y: by_hour_data.map(d => d.Faulty_Blanks_Percentage),
+                mode: 'lines+markers',
+                type: 'scatter',
+                marker: { color: lilac },
+                line: { color: lilac }
+            };
+
+            const faultyBlanksLayout = {
+                title: {
+                    text: 'Percentage of Faulty Blanks Over Time',
+                    font: { color: lilac }
+                },
+                xaxis: {
+                    title: {
+                        text: 'Date',
+                        font: { color: lilac }
+                    },
+                    tickangle: 45,
+                    tickfont: { color: lilac }
+                },
+                yaxis: {
+                    title: {
+                        text: 'Faulty Blanks Percentage',
+                        font: { color: lilac }
+                    },
+                    tickfont: { color: lilac }
+                },
+                plot_bgcolor: '#FFFFFF',
+                paper_bgcolor: '#FFFFFF',
+                grid: { color: '#DDDDDD' },
+                font: { color: lilac }
+            };
+
+            Plotly.newPlot('faultyBlanksPlot', [faultyBlanksTrace], faultyBlanksLayout);
+
+            // Prepare data for the types of mistakes stacked bar plot
+            const mistakeColumns = ['Nb_BigShape', 'Nb_Diameter', 'Nb_Shape_int', 'Nb_Shape_ext', 'Nb_Stain',
+                                    'Nb_Surface_fixed', 'Nb_Surface_adaptive', 'Nb_Rim_Continuity', 'Nb_Rim_Surface',
+                                    'Nb_Color', 'Nb_Thick_plus', 'Nb_Thick_minus'];
+
+            const mistakeTraces = mistakeColumns.map(col => {
+                return {
+                    x: by_hour_data.map(d => d.Date),
+                    y: by_hour_data.map(d => d[col]),
+                    name: col,
+                    type: 'bar'
+                };
+            });
+
+            const mistakesLayout = {
+                barmode: 'stack',
+                title: {
+                    text: 'Types of Mistakes Over Time',
+                    font: { color: lilac }
+                },
+                xaxis: {
+                    title: {
+                        text: 'Date',
+                        font: { color: lilac }
+                    },
+                    tickangle: 45,
+                    tickfont: { color: lilac }
+                },
+                yaxis: {
+                    title: {
+                        text: 'Count',
+                        font: { color: lilac }
+                    },
+                    tickfont: { color: lilac }
+                },
+                legend: {
+                    title: {
+                        text: 'Mistake Type',
+                        font: { color: lilac }
+                    },
+                    x: 1.05,
+                    y: 1,
+                    bgcolor: 'rgba(255,255,255,0)'
+                },
+                plot_bgcolor: '#FFFFFF',
+                paper_bgcolor: '#FFFFFF',
+                grid: { color: '#DDDDDD' },
+                font: { color: lilac }
+            };
+
+            Plotly.newPlot('mistakesPlot', mistakeTraces, mistakesLayout);
+        },
+        error: function(error) {
+            console.log(error);
+        }
+    });
+</script>
+
+</body>
+</html>

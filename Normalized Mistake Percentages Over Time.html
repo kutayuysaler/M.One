@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Normalized Mistake Percentages Over Time</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.3.0/papaparse.min.js"></script>
+</head>
+<body>
+
+<div id="plotDiv"></div>
+
+<script>
+    // Define lilac color
+    const lilac = '#AFA1E2';
+
+    // List of mistake columns
+    const mistakeColumns = ['Nb_BigShape', 'Nb_Diameter', 'Nb_Shape_int', 'Nb_Shape_ext', 'Nb_Stain', 
+                            'Nb_Surface_fixed', 'Nb_Surface_adaptive', 'Nb_Rim_Continuity', 'Nb_Rim_Surface',
+                            'Nb_Color', 'Nb_Thick_plus', 'Nb_Thick_minus'];
+
+    // Path to the CSV file
+    const csvFilePath = 'path/to/your/ByHour.csv';
+
+    // Function to fetch and parse CSV data
+    Papa.parse(csvFilePath, {
+        download: true,
+        header: true,
+        complete: function(results) {
+            const data = results.data;
+
+            // Aggregate mistake counts into a single column
+            data.forEach(d => {
+                d.Total_Mistakes = mistakeColumns.reduce((sum, col) => sum + parseFloat(d[col]), 0);
+            });
+
+            // Calculate percentage of each mistake type relative to total mistakes
+            data.forEach(d => {
+                mistakeColumns.forEach(col => {
+                    d[col + '_Percentage'] = (parseFloat(d[col]) / d.Total_Mistakes) * 100;
+                });
+            });
+
+            // Extract x data (dates)
+            const xData = data.map(d => d.Date);
+
+            // Create traces for each mistake type
+            const traces = mistakeColumns.map(col => {
+                return {
+                    x: xData,
+                    y: data.map(d => d[col + '_Percentage']),
+                    mode: 'lines+markers',
+                    name: col,
+                    line: { color: lilac },
+                    marker: { color: lilac },
+                };
+            });
+
+            // Define layout options
+            const layout = {
+                title: {
+                    text: 'Normalized Mistake Percentages Over Time',
+                    font: { color: lilac },
+                },
+                xaxis: {
+                    title: {
+                        text: 'Date',
+                        font: { color: lilac }
+                    },
+                    tickangle: -45,
+                    tickfont: { color: lilac },
+                },
+                yaxis: {
+                    title: {
+                        text: 'Percentage',
+                        font: { color: lilac }
+                    },
+                    tickfont: { color: lilac },
+                },
+                legend: {
+                    title: { text: 'Mistake Types' },
+                    x: 1.05,
+                    y: 1,
+                    traceorder: 'normal',
+                    font: { color: lilac },
+                    bgcolor: 'rgba(0, 0, 0, 0)',
+                },
+                grid: { 
+                    color: 'rgba(0, 0, 0, 0.1)',
+                    dash: 'dot',
+                },
+                margin: { t: 60, b: 60, l: 60, r: 60 },
+                paper_bgcolor: 'rgba(0, 0, 0, 0)',
+                plot_bgcolor: 'rgba(0, 0, 0, 0)',
+            };
+
+            // Create a new plotly chart
+            Plotly.newPlot('plotDiv', traces, layout);
+        },
+        error: function(error) {
+            console.log(error);
+        }
+    });
+</script>
+
+</body>
+</html>

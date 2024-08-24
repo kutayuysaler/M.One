@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plotly Visualization</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.3.0/papaparse.min.js"></script>
+</head>
+<body>
+
+<div id="plotDiv"></div>
+
+<script>
+    // Define lilac color
+    const lilac = '#AFA1E2';
+
+    // Path to the CSV file
+    const csvFilePath = 'path/to/your/ByHour.csv';
+
+    // Function to fetch and parse CSV data
+    Papa.parse(csvFilePath, {
+        download: true,
+        header: true,
+        complete: function(results) {
+            const by_hour_data = results.data;
+
+            // Parse date and numerical columns
+            by_hour_data.forEach(d => {
+                d.index = new Date(d.index);
+                d.WeightTotal_lb = +d.WeightTotal_lb;
+            });
+
+            // Extract x and y data
+            const xData = by_hour_data.map(d => d.index);
+            const yData = by_hour_data.map(d => d.WeightTotal_lb);
+
+            // Create a new plotly trace
+            const trace = {
+                x: xData,
+                y: yData,
+                mode: 'lines+markers',
+                line: { color: lilac },
+                marker: { color: lilac },
+            };
+
+            // Define layout options
+            const layout = {
+                title: {
+                    text: 'Weight of Coins Checked Over Time',
+                    font: { color: lilac },
+                },
+                xaxis: {
+                    title: {
+                        text: 'Date',
+                        font: { color: lilac }
+                    },
+                    tickangle: -45,
+                    tickfont: { color: lilac },
+                },
+                yaxis: {
+                    title: {
+                        text: 'Weight (lb)',
+                        font: { color: lilac }
+                    },
+                    tickfont: { color: lilac },
+                },
+                grid: { 
+                    color: 'rgba(0, 0, 0, 0.1)',
+                    dash: 'dot',
+                },
+                margin: { t: 60, b: 60, l: 60, r: 60 },
+                paper_bgcolor: 'rgba(0, 0, 0, 0)',
+                plot_bgcolor: 'rgba(0, 0, 0, 0)',
+            };
+
+            // Create a new plotly chart
+            Plotly.newPlot('plotDiv', [trace], layout);
+        },
+        error: function(error) {
+            console.log(error);
+        }
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Series of Faulty Blanks with Spike Events</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.3.0/papaparse.min.js"></script>
+</head>
+<body>
+
+<div id="plotDiv"></div>
+
+<script>
+    // Define lilac color
+    const lilac = '#AFA1E2';
+
+    // Path to the CSV file
+    const csvFilePath = 'path/to/your/ByHour.csv';
+
+    // Function to fetch and parse CSV data
+    Papa.parse(csvFilePath, {
+        download: true,
+        header: true,
+        complete: function(results) {
+            const data = results.data;
+
+            // Parse date and numerical columns
+            data.forEach(d => {
+                d.Date = new Date(d.Date);
+                d.Nb_blanks_rejected = +d.Nb_blanks_rejected;
+            });
+
+            // Aggregate data to hourly frequency (sum of rejected blanks)
+            const hourlyData = d3.rollups(
+                data,
+                v => d3.sum(v, d => d.Nb_blanks_rejected),
+                d => d3.timeHour(d.Date)
+            ).map(d => ({ Date: d[0], Nb_blanks_rejected: d[1] }));
+
+            // Define threshold for spike events
+            const threshold = 50;
+            const spikeEvents = hourlyData.filter(d => d.Nb_blanks_rejected > threshold);
+
+            // Extract x and y data
+            const xData = hourlyData.map(d => d.Date);
+            const yData = hourlyData.map(d => d.Nb_blanks_rejected);
+
+            // Create traces
+            const trace = {
+                x: xData,
+                y: yData,
+                mode: 'lines+markers',
+                name: 'Faulty Blanks',
+                line: { color: 'blue' },
+                marker: { color: 'blue' },
+            };
+
+            const spikeTrace = {
+                x: spikeEvents.map(d => d.Date),
+                y: spikeEvents.map(d => d.Nb_blanks_rejected),
+                mode: 'markers',
+                name: 'Spike Events',
+                marker: { color: 'red', size: 10 },
+            };
+
+            // Define layout options
+            const layout = {
+                title: {
+                    text: 'Time Series of Faulty Blanks with Spike Events',
+                    font: { color: lilac },
+                },
+                xaxis: {
+                    title: {
+                        text: 'Date',
+                        font: { color: lilac }
+                    },
+                    tickangle: -45,
+                    tickfont: { color: lilac },
+                },
+                yaxis: {
+                    title: {
+                        text: 'Number of Faulty Blanks',
+                        font: { color: lilac }
+                    },
+                    tickfont: { color: lilac },
+                },
+                legend: {
+                    x: 1.05,
+                    y: 1,
+                    font: { color: lilac },
+                    bgcolor: 'rgba(0, 0, 0, 0)',
+                },
+                grid: { 
+                    color: 'rgba(0, 0, 0, 0.1)',
+                    dash: 'dot',
+                },
+                margin: { t: 60, b: 60, l: 60, r: 60 },
+                paper_bgcolor: 'rgba(0, 0, 0, 0)',
+                plot_bgcolor: 'rgba(0, 0, 0, 0)',
+            };
+
+            // Create a new plotly chart
+            Plotly.newPlot('plotDiv', [trace, spikeTrace], layout);
+        },
+        error: function(error) {
+            console.log(error);
+        }
+    });
+</script>
+
+</body>
+</html>
